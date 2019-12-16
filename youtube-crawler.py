@@ -14,9 +14,33 @@ def main():
         'chart': 'mostPopular',
         'regionCode': 'KR'
     }
-    response = requests.get('https://www.googleapis.com/youtube/v3/videos',
-                            params=params_setting)
-    print(response.json())
+    raw_response = requests.get(
+        'https://www.googleapis.com/youtube/v3/videos', params=params_setting)
+    status_code = raw_response.status_code
+    response = raw_response.json()
+    if status_code != 200:
+        print(status_code)
+        print("request failed, exiting")
+        return
+    print(f"""
+    kind            {response['kind']}
+    pageInfo        {response['pageInfo']}
+    nextPageToken   {response['nextPageToken']}
+
+<<<< VIDEO INFO >>>>
+    """)
+    print(f"video keys : {response['items'][0]['snippet'].keys()}")
+    for video in response['items']:
+        print(f"""
+IDENTIFIER :    {video['id']}
+
+TITLE :         {video['snippet']['title']}
+
+DESCRIPTION :   {video['snippet']['description']}
+
+CHANNEL :       {video['snippet']['channelTitle']}
+
+      """)
 
 
 if __name__ == '__main__':
