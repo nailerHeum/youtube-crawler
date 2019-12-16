@@ -21,7 +21,7 @@ def insert_items(raw_response, prev_result=[]):
     except:
         print('There is no more next page token')
 
-    return result + prev_result, next_page_token
+    return prev_result + result, next_page_token
 
 
 def main():
@@ -41,14 +41,17 @@ def main():
         if is_invalid_res(raw_response):
             return
         result, next_page_token = insert_items(raw_response, result)
-
     print(f"""
-          *********RESULT*********
-          ALL VIDEOS : {len(result)}
+*********RESULT*********
+ALL VIDEOS : {len(result)}
           
-          VIDEO DATA DUMP
-          {[x.__dict__ for x in result]}
+VIDEO DATA TITLE & CHANNEL
           """)
+    titles = [x.__dict__['title'] for x in result]
+    channels = [x.__dict__['channel'] for x in result]
+    for idx in range(len(titles)):
+        print(f"TITLE : {titles[idx]}")
+        print(f"CHANNEL : {channels[idx]}")
 
 
 if __name__ == '__main__':
