@@ -1,8 +1,4 @@
-import json
-import requests
-from .crawl_utils import set_params, is_invalid_res
-with open('./youtube_key.json', "r") as json_str:
-    YOUTUBE_API_KEY = json.load(json_str)["YOUTUBE_API_KEY"]
+from crawl_utils import set_params, is_invalid_res, get_raw_res, print_res_infos
 
 
 class Video():
@@ -13,59 +9,46 @@ class Video():
         self.channel = channel
 
 
-def print_infos(response):
-    """
-    RESPONSE INFORMATION
-    """
-    print(f"""
-    kind            {response['kind']}
-    pageInfo        {response['pageInfo']}
-    nextPageToken   {response['nextPageToken']}
-
-<<<< VIDEO INFO >>>>
-    """)
-    print(f"video keys : {response['items'][0]['snippet'].keys()}")
-    for video in response['items']:
-        print(f"""
-IDENTIFIER :    {video['id']}
-
-TITLE :         {video['snippet']['title']}
-
-DESCRIPTION :   {video['snippet']['description']}
-
-CHANNEL :       {video['snippet']['channelTitle']}
-
-      """)
-
-
-def items_to_json(response, prev_result=[]):
+def insert_items(raw_response, prev_result=[]):
     result = []
-    result += prev_result
-    return result + prev_result
+    response = raw_response.json()
+    for video in response['items']:
+        result.append(Video(video['id'], video['snippet']['title'],
+                            video['snippet']['description'], video['snippet']['channelTitle']))
+    next_page_token = None
+    try:
+        next_page_token = response['nextPageToken']
+    except:
+        print('There is no more next page token')
+
+    return result + prev_result, next_page_token
 
 
 def main():
     """
     GETTING YOUTUBE's TRENDING VIDEOS
     """
-    params_setting = set_params()
-    raw_response = requests.get(
-        'https://www.googleapis.com/youtube/v3/videos', params=params_setting)
+    initial_params = set_params()
+    raw_response = get_raw_res(initial_params)
 
     if is_invalid_res(raw_response):
         return
+    result, next_page_token = insert_items(raw_response)
 
-    response = raw_response.json()
-
-    result = []
-    for video in response['items']:
-        result.append(Video(video['id'], video['snippet']['title'],
-                            video['snippet']['description'], video['snippet']['channelTitle']))
-
-    print([x.__dict__ for x in result])
-    next_page_token = response['nextPageToken']
     while next_page_token:
         req_params = set_params(next_page_token)
+        raw_response = get_raw_res(req_params)
+        if is_invalid_res(raw_response):
+            return
+        result, next_page_token = insert_items(raw_response, result)
+
+    print(f"""
+          *********RESULT*********
+          ALL VIDEOS : {len(result)}
+          
+          VIDEO DATA DUMP
+          {[x.__dict__ for x in result]}
+          """)
 
 
 if __name__ == '__main__':
